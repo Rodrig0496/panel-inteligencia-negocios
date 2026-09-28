@@ -23,7 +23,7 @@ import { auth, githubProvider, db } from './firebase';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [searchQuery, setSearchQuery] = useState('facebook/react');
+  const [searchQuery, setSearchQuery] = useState('UPT-FAING-EPIS/si885-2026-ii-si885-2026-ii-proyecto-group-4');
   const [repoData, setRepoData] = useState<any>(null);
   const [contributors, setContributors] = useState<any[]>([]);
   const [milestones, setMilestones] = useState<any[]>([]);
@@ -256,16 +256,19 @@ function App() {
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-card)', padding: '0.4rem 0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <Search size={18} style={{ color: 'var(--text-secondary)', marginRight: '0.5rem' }} />
-              <input 
-                type="text" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="usuario/repositorio..." 
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', outline: 'none', width: '200px' }}
-              />
-            </form>
+            <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-card)', padding: '0.4rem 0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+              <GitGraph size={18} style={{ marginRight: '0.5rem', color: 'var(--accent-color)' }} />
+              <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Proyecto: {searchQuery}</span>
+            </div>
+            
+            <button 
+              onClick={() => fetchRepoData(searchQuery, githubToken)}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--accent-color)', color: '#fff', border: 'none', padding: '0.4rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+              disabled={loading}
+            >
+              <Search size={16} />
+              {loading ? 'Actualizando...' : 'Recargar Datos'}
+            </button>
             
             <div style={{ cursor: 'pointer', color: 'var(--text-secondary)' }}><Bell size={20} /></div>
 
