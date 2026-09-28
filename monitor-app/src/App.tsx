@@ -26,6 +26,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('facebook/react');
   const [repoData, setRepoData] = useState<any>(null);
   const [contributors, setContributors] = useState<any[]>([]);
+  const [milestones, setMilestones] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<{name: string | null, avatar: string | null, email: string | null, screenName?: string} | null>(null);
   const [githubToken, setGithubToken] = useState<string | null>(sessionStorage.getItem('github_token'));
@@ -33,7 +34,17 @@ function App() {
   const [showRepos, setShowRepos] = useState(false);
 
   // Función para buscar repositorio en GitHub API
-  const fetchRepoData = async (query: string, token?: string | null) => {
+  const fetchRepoData = async (rawQuery: string, token?: string | null) => {
+    // Sanitizar entrada por si el usuario pega una URL completa
+    let query = rawQuery.trim();
+    if (query.includes('github.com/')) {
+        const parts = query.split('github.com/')[1].split('/');
+        if (parts.length >= 2) {
+            query = `${parts[0]}/${parts[1].replace('.git', '')}`;
+        }
+    }
+    setSearchQuery(query); // Actualizamos la barra de búsqueda para que se vea limpio
+
     if (!query.includes('/')) return; // Debe ser owner/repo
     setLoading(true);
     try {
@@ -45,23 +56,50 @@ function App() {
         const data = await response.json();
         setRepoData(data);
         
-        // Obtener también los colaboradores (Equipo)
+        // 1. Obtener issues para ver tareas asignadas al equipo (Inteligencia de Negocios)
+        let issueCounts: Record<string, number> = {};
+        const issuesRes = await fetch(`https://api.github.com/repos/${query}/issues?state=open&per_page=100`, { headers });
+        if (issuesRes.ok) {
+          const issues = await issuesRes.json();
+          issues.forEach((issue: any) => {
+            issue.assignees?.forEach((assignee: any) => {
+              issueCounts[assignee.login] = (issueCounts[assignee.login] || 0) + 1;
+            });
+          });
+        }
+
+        // 2. Obtener colaboradores y combinarlos con sus tareas asignadas
         const contribResponse = await fetch(`https://api.github.com/repos/${query}/contributors?per_page=12`, { headers });
         if (contribResponse.ok) {
           const contribData = await contribResponse.json();
-          setContributors(contribData);
+          const enrichedContributors = contribData.map((c: any) => ({
+             ...c,
+             assigned_tasks: issueCounts[c.login] || 0
+          }));
+          setContributors(enrichedContributors);
         } else {
           setContributors([]);
+        }
+
+        // 3. Obtener Milestones (Cronograma)
+        const milestonesRes = await fetch(`https://api.github.com/repos/${query}/milestones?state=all`, { headers });
+        if (milestonesRes.ok) {
+          const mData = await milestonesRes.json();
+          setMilestones(mData);
+        } else {
+          setMilestones([]);
         }
 
       } else {
         setRepoData(null);
         setContributors([]);
+        setMilestones([]);
       }
     } catch (error) {
       console.error('Error fetching data', error);
       setRepoData(null);
       setContributors([]);
+      setMilestones([]);
     }
     setLoading(false);
   };
@@ -391,7 +429,7 @@ function App() {
             <h3>Análisis del Equipo (Colaboradores)</h3>
             <p style={{ color: 'var(--text-secondary)' }}>Métricas de contribución individual para el repositorio actual. Permite tomar decisiones sobre asignación de recursos y carga de trabajo.</p>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
               {loading ? (
                 <p>Cargando equipo...</p>
               ) : contributors.length > 0 ? (
@@ -402,9 +440,21 @@ function App() {
                       <h4 style={{ margin: 0, color: 'var(--accent-color)' }}>{member.login}</h4>
                       <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Colaborador</p>
                       
-                      <div style={{ marginTop: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <GitGraph size={14} style={{ color: 'var(--success-color)' }} />
-                        <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{member.contributions} aportes</span>
+                      <div style={{ marginTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <GitGraph size={14} style={{ color: 'var(--success-color)' }} />
+                          <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{member.contributions} aportes (commits)</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <AlertCircle size={14} style={{ color: member.assigned_tasks >= 3 ? 'var(--danger-color)' : 'var(--text-secondary)' }} />
+                          <span style={{ 
+                            fontSize: '0.9rem', 
+                            fontWeight: 600, 
+                            color: member.assigned_tasks >= 3 ? 'var(--danger-color)' : 'var(--text-primary)'
+                          }}>
+                            {member.assigned_tasks} tareas asignadas {member.assigned_tasks >= 3 && '(Sobrecarga)'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -436,14 +486,67 @@ function App() {
         {activeTab === 'schedule' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <h3>Cronograma (Milestones)</h3>
-            <div className="powerbi-container" style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-              <div>
-                <Calendar size={48} style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }} />
-                <h4>Seguimiento de Hitos y Tareas</h4>
-                <p style={{ color: 'var(--text-secondary)', maxWidth: '500px', marginTop: '0.5rem' }}>
-                  Aquí se visualizará un Diagrama de Gantt o una línea de tiempo (Timeline) con las fechas de entrega del proyecto extraídas de la pestaña "Milestones" de GitHub.
-                </p>
-              </div>
+            <p style={{ color: 'var(--text-secondary)' }}>Seguimiento de hitos y progreso de las fases del proyecto. Ideal para monitorear fechas de entrega.</p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {loading ? (
+                <p>Cargando cronograma...</p>
+              ) : milestones.length > 0 ? (
+                milestones.map(milestone => {
+                  const totalIssues = milestone.open_issues + milestone.closed_issues;
+                  const progress = totalIssues === 0 ? 0 : Math.round((milestone.closed_issues / totalIssues) * 100);
+                  const isOverdue = milestone.due_on && new Date(milestone.due_on) < new Date() && milestone.state === 'open';
+                  
+                  return (
+                    <div key={milestone.id} className="metric-card" style={{ display: 'block' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <div>
+                          <h4 style={{ color: 'var(--text-primary)', margin: 0, fontSize: '1.1rem' }}>{milestone.title}</h4>
+                          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
+                            {milestone.description || 'Sin descripción'}
+                          </p>
+                        </div>
+                        <span style={{ 
+                          padding: '0.3rem 0.6rem', 
+                          borderRadius: '12px', 
+                          fontSize: '0.8rem', 
+                          fontWeight: 600,
+                          background: milestone.state === 'closed' ? 'rgba(63, 185, 80, 0.2)' : 'rgba(88, 166, 255, 0.2)',
+                          color: milestone.state === 'closed' ? 'var(--success-color)' : 'var(--accent-color)'
+                        }}>
+                          {milestone.state === 'closed' ? 'Completado' : 'En progreso'}
+                        </span>
+                      </div>
+                      
+                      {/* Progress Bar */}
+                      <div style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <span style={{ fontWeight: 600 }}>Avance: {progress}%</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{milestone.closed_issues} / {totalIssues} Tareas completadas</span>
+                      </div>
+                      <div style={{ width: '100%', height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${progress}%`, height: '100%', background: progress === 100 ? 'var(--success-color)' : 'var(--accent-color)', transition: 'width 0.3s' }}></div>
+                      </div>
+                      
+                      <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: isOverdue ? 'var(--danger-color)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Calendar size={14} />
+                        {milestone.due_on ? (
+                          <span style={{ fontWeight: isOverdue ? 600 : 400 }}>
+                            Fecha de entrega: {new Date(milestone.due_on).toLocaleDateString()}
+                            {isOverdue && ' (¡Atención: Atrasado!)'}
+                          </span>
+                        ) : 'Sin fecha límite definida'}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="metric-card">
+                  <div style={{ textAlign: 'center', padding: '2rem' }}>
+                    <Calendar size={48} style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }} />
+                    <p style={{ margin: 0 }}>Este repositorio no tiene hitos (Milestones) configurados en GitHub.</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
