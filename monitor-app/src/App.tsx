@@ -28,6 +28,7 @@ function App() {
   const [contributors, setContributors] = useState<any[]>([]);
   const [milestones, setMilestones] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [powerBiUrl, setPowerBiUrl] = useState<string>(localStorage.getItem('powerbi_url') || '');
   const [user, setUser] = useState<{name: string | null, avatar: string | null, email: string | null, screenName?: string} | null>(null);
   const [githubToken, setGithubToken] = useState<string | null>(sessionStorage.getItem('github_token'));
   const [myRepos, setMyRepos] = useState<any[]>([]);
@@ -409,15 +410,27 @@ function App() {
               </div>
               
               <div className="powerbi-wrapper">
-                <div className="placeholder-content">
-                  <BarChart className="placeholder-icon" size={64} />
-                  <div style={{ textAlign: 'center' }}>
-                    <h4 style={{ color: '#323130', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Espacio Reservado para Power BI</h4>
-                    <p style={{ maxWidth: '400px', margin: '0 auto', fontSize: '0.9rem' }}>
-                      Una vez que el dashboard de Power BI esté publicado en la web, el código Embed (iframe) se colocará aquí para visualizar los gráficos interactivos.
-                    </p>
+                {powerBiUrl ? (
+                  <iframe 
+                    title="Reporte Power BI" 
+                    width="100%" 
+                    height="100%" 
+                    src={powerBiUrl} 
+                    frameBorder="0" 
+                    allowFullScreen={true}
+                    style={{ borderRadius: '8px', minHeight: '500px' }}
+                  ></iframe>
+                ) : (
+                  <div className="placeholder-content">
+                    <BarChart className="placeholder-icon" size={64} />
+                    <div style={{ textAlign: 'center' }}>
+                      <h4 style={{ color: '#323130', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Espacio Reservado para Power BI</h4>
+                      <p style={{ maxWidth: '400px', margin: '0 auto', fontSize: '0.9rem' }}>
+                        Ve a la pestaña de "Configuración" para pegar el enlace seguro de tu reporte de Power BI.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </>
@@ -555,13 +568,39 @@ function App() {
         {activeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <h3>Configuración del Dashboard</h3>
-            <div className="powerbi-container" style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-              <div>
-                <Settings size={48} style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }} />
-                <h4>Ajustes de Integración</h4>
-                <p style={{ color: 'var(--text-secondary)', maxWidth: '500px', marginTop: '0.5rem' }}>
-                  En este panel podrás insertar el "Código Iframe" secreto de tu reporte de PowerBI cuando lo tengas listo, cambiar temas visuales y conectar otras herramientas.
-                </p>
+            <p style={{ color: 'var(--text-secondary)' }}>Ajustes y conexión con herramientas externas de Inteligencia de Negocios.</p>
+            
+            <div className="metric-card" style={{ display: 'block', maxWidth: '700px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1rem' }}>
+                <BarChart size={24} style={{ color: 'var(--accent-color)' }} />
+                <h4 style={{ margin: 0, color: 'var(--text-primary)' }}>Integración con Power BI</h4>
+              </div>
+              
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                Para mostrar tus gráficos interactivos, publica tu reporte en Power BI Service y selecciona "Publicar en la web". Luego, pega el enlace seguro (URL) que te proporcionan aquí abajo:
+              </p>
+              
+              <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
+                <input 
+                  type="text" 
+                  placeholder="Ejemplo: https://app.powerbi.com/view?r=..." 
+                  value={powerBiUrl}
+                  onChange={(e) => {
+                    setPowerBiUrl(e.target.value);
+                    localStorage.setItem('powerbi_url', e.target.value);
+                  }}
+                  style={{ 
+                    width: '100%', 
+                    padding: '0.8rem', 
+                    borderRadius: '8px', 
+                    border: '1px solid var(--border-color)', 
+                    background: 'var(--bg-dark)', 
+                    color: 'var(--text-primary)',
+                    outline: 'none',
+                    fontSize: '0.9rem'
+                  }}
+                />
+                {powerBiUrl && <span style={{ color: 'var(--success-color)', fontSize: '0.85rem' }}>✓ Enlace vinculado y guardado correctamente. Revisa el Dashboard BI.</span>}
               </div>
             </div>
           </div>
