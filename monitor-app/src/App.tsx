@@ -25,6 +25,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('facebook/react');
   const [repoData, setRepoData] = useState<any>(null);
+  const [contributors, setContributors] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<{name: string | null, avatar: string | null, email: string | null, screenName?: string} | null>(null);
   const [githubToken, setGithubToken] = useState<string | null>(sessionStorage.getItem('github_token'));
@@ -43,12 +44,24 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         setRepoData(data);
+        
+        // Obtener también los colaboradores (Equipo)
+        const contribResponse = await fetch(`https://api.github.com/repos/${query}/contributors?per_page=12`, { headers });
+        if (contribResponse.ok) {
+          const contribData = await contribResponse.json();
+          setContributors(contribData);
+        } else {
+          setContributors([]);
+        }
+
       } else {
         setRepoData(null);
+        setContributors([]);
       }
     } catch (error) {
       console.error('Error fetching data', error);
       setRepoData(null);
+      setContributors([]);
     }
     setLoading(false);
   };
@@ -265,7 +278,7 @@ function App() {
           </div>
         </header>
 
-        {/* Info Repositorio Seleccionado */}
+        {/* Info Repositorio Seleccionado (Visible en todas las pestañas) */}
         {repoData && (
           <div style={{ background: 'rgba(88, 166, 255, 0.1)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(88, 166, 255, 0.3)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <img src={repoData.owner.avatar_url} alt="Owner" style={{ width: '48px', height: '48px', borderRadius: '8px' }} />
@@ -276,97 +289,181 @@ function App() {
           </div>
         )}
 
-        {/* Metrics Cards */}
-        <div className="metrics-grid">
-          <div className="metric-card">
-            <div className="metric-header">
-              <span>Total Commits (Aprox)</span>
-              <GitGraph size={18} />
-            </div>
-            <div className="metric-value">
-              {loading ? '...' : (repoData ? (repoData.size > 1000 ? '+1k' : repoData.size) : '0')}
-            </div>
-            <div className="metric-trend trend-up">
-              <TrendingUp size={14} />
-              <span>Actualizado recientemente</span>
-            </div>
-          </div>
+        {/* --- CONTENIDO DINÁMICO POR PESTAÑA --- */}
+        
+        {/* PESTAÑA: DASHBOARD BI */}
+        {activeTab === 'dashboard' && (
+          <>
+            {/* Metrics Cards */}
+            <div className="metrics-grid">
+              <div className="metric-card">
+                <div className="metric-header">
+                  <span>Total Commits (Aprox)</span>
+                  <GitGraph size={18} />
+                </div>
+                <div className="metric-value">
+                  {loading ? '...' : (repoData ? (repoData.size > 1000 ? '+1k' : repoData.size) : '0')}
+                </div>
+                <div className="metric-trend trend-up">
+                  <TrendingUp size={14} />
+                  <span>Actualizado recientemente</span>
+                </div>
+              </div>
 
-          <div className="metric-card">
-            <div className="metric-header">
-              <span>Estrellas (Stars)</span>
-              <GitPullRequest size={18} />
-            </div>
-            <div className="metric-value">
-              {loading ? '...' : (repoData?.stargazers_count || 0)}
-            </div>
-            <div className="metric-trend trend-up">
-              <TrendingUp size={14} />
-              <span>Popularidad del repo</span>
-            </div>
-          </div>
+              <div className="metric-card">
+                <div className="metric-header">
+                  <span>Estrellas (Stars)</span>
+                  <GitPullRequest size={18} />
+                </div>
+                <div className="metric-value">
+                  {loading ? '...' : (repoData?.stargazers_count || 0)}
+                </div>
+                <div className="metric-trend trend-up">
+                  <TrendingUp size={14} />
+                  <span>Popularidad del repo</span>
+                </div>
+              </div>
 
-          <div className="metric-card">
-            <div className="metric-header">
-              <span>Forks (Bifurcaciones)</span>
-              <AlertCircle size={18} />
+              <div className="metric-card">
+                <div className="metric-header">
+                  <span>Forks (Bifurcaciones)</span>
+                  <AlertCircle size={18} />
+                </div>
+                <div className="metric-value">
+                  {loading ? '...' : (repoData?.forks_count || 0)}
+                </div>
+                <div className="metric-trend trend-up">
+                  <TrendingUp size={14} />
+                  <span>Participación externa</span>
+                </div>
+              </div>
+              
+              <div className="metric-card">
+                <div className="metric-header">
+                  <span>Issues Abiertos</span>
+                  <BarChart3 size={18} />
+                </div>
+                <div className="metric-value">
+                  {loading ? '...' : (repoData?.open_issues_count || 0)}
+                </div>
+                <div className="metric-trend trend-down">
+                  <TrendingDown size={14} />
+                  <span>Pendientes de resolver</span>
+                </div>
+              </div>
             </div>
-            <div className="metric-value">
-              {loading ? '...' : (repoData?.forks_count || 0)}
-            </div>
-            <div className="metric-trend trend-up">
-              <TrendingUp size={14} />
-              <span>Participación externa</span>
-            </div>
-          </div>
-          
-          <div className="metric-card">
-            <div className="metric-header">
-              <span>Issues Abiertos</span>
-              <BarChart3 size={18} />
-            </div>
-            <div className="metric-value">
-              {loading ? '...' : (repoData?.open_issues_count || 0)}
-            </div>
-            <div className="metric-trend trend-down">
-              <TrendingDown size={14} />
-              <span>Pendientes de resolver</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Power BI Container */}
-        <div className="powerbi-container">
-          <div className="powerbi-header">
-            <h3>Reporte Power BI: Toma de Decisiones</h3>
-            <button style={{ 
-              background: 'rgba(88, 166, 255, 0.1)', 
-              border: '1px solid var(--accent-color)', 
-              color: 'var(--accent-color)',
-              padding: '0.4rem 1rem',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 500
-            }}>
-              Actualizar Datos
-            </button>
-          </div>
-          
-          <div className="powerbi-wrapper">
-            {/* Aquí irá el iframe de Power BI */}
-            {/* Ejemplo: <iframe title="Report Section" width="100%" height="100%" src="YOUR_EMBED_URL" frameBorder="0" allowFullScreen="true"></iframe> */}
+            {/* Power BI Container */}
+            <div className="powerbi-container">
+              <div className="powerbi-header">
+                <h3>Reporte Power BI: Toma de Decisiones</h3>
+                <button style={{ 
+                  background: 'rgba(88, 166, 255, 0.1)', 
+                  border: '1px solid var(--accent-color)', 
+                  color: 'var(--accent-color)',
+                  padding: '0.4rem 1rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 500
+                }}>
+                  Actualizar Datos
+                </button>
+              </div>
+              
+              <div className="powerbi-wrapper">
+                <div className="placeholder-content">
+                  <BarChart className="placeholder-icon" size={64} />
+                  <div style={{ textAlign: 'center' }}>
+                    <h4 style={{ color: '#323130', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Espacio Reservado para Power BI</h4>
+                    <p style={{ maxWidth: '400px', margin: '0 auto', fontSize: '0.9rem' }}>
+                      Una vez que el dashboard de Power BI esté publicado en la web, el código Embed (iframe) se colocará aquí para visualizar los gráficos interactivos.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* PESTAÑA: EQUIPO */}
+        {activeTab === 'team' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <h3>Análisis del Equipo (Colaboradores)</h3>
+            <p style={{ color: 'var(--text-secondary)' }}>Métricas de contribución individual para el repositorio actual. Permite tomar decisiones sobre asignación de recursos y carga de trabajo.</p>
             
-            <div className="placeholder-content">
-              <BarChart className="placeholder-icon" size={64} />
-              <div style={{ textAlign: 'center' }}>
-                <h4 style={{ color: '#323130', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Espacio Reservado para Power BI</h4>
-                <p style={{ maxWidth: '400px', margin: '0 auto', fontSize: '0.9rem' }}>
-                  Una vez que el dashboard de Power BI esté publicado en la web, el código Embed (iframe) se colocará aquí para visualizar los gráficos interactivos.
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+              {loading ? (
+                <p>Cargando equipo...</p>
+              ) : contributors.length > 0 ? (
+                contributors.map(member => (
+                  <div key={member.id} className="metric-card" style={{ flexDirection: 'row', alignItems: 'center', gap: '1.5rem' }}>
+                    <img src={member.avatar_url} alt={member.login} style={{ width: '64px', height: '64px', borderRadius: '50%', border: '2px solid var(--border-color)' }} />
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: 0, color: 'var(--accent-color)' }}>{member.login}</h4>
+                      <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Colaborador</p>
+                      
+                      <div style={{ marginTop: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <GitGraph size={14} style={{ color: 'var(--success-color)' }} />
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{member.contributions} aportes</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="metric-card"><p>No se encontraron datos de colaboradores.</p></div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* PESTAÑA: REPOSITORIOS */}
+        {activeTab === 'projects' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <h3>Comparador de Repositorios</h3>
+            <div className="powerbi-container" style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+              <div>
+                <Search size={48} style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }} />
+                <h4>Buscador Global de Proyectos</h4>
+                <p style={{ color: 'var(--text-secondary)', maxWidth: '500px', marginTop: '0.5rem' }}>
+                  En esta sección, en el futuro se implementará una tabla comparativa para analizar múltiples repositorios (ej. los de toda tu universidad) simultáneamente, en lugar de uno por uno.
                 </p>
               </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* PESTAÑA: CRONOGRAMA */}
+        {activeTab === 'schedule' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <h3>Cronograma (Milestones)</h3>
+            <div className="powerbi-container" style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+              <div>
+                <Calendar size={48} style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }} />
+                <h4>Seguimiento de Hitos y Tareas</h4>
+                <p style={{ color: 'var(--text-secondary)', maxWidth: '500px', marginTop: '0.5rem' }}>
+                  Aquí se visualizará un Diagrama de Gantt o una línea de tiempo (Timeline) con las fechas de entrega del proyecto extraídas de la pestaña "Milestones" de GitHub.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PESTAÑA: CONFIGURACIÓN */}
+        {activeTab === 'settings' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <h3>Configuración del Dashboard</h3>
+            <div className="powerbi-container" style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+              <div>
+                <Settings size={48} style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }} />
+                <h4>Ajustes de Integración</h4>
+                <p style={{ color: 'var(--text-secondary)', maxWidth: '500px', marginTop: '0.5rem' }}>
+                  En este panel podrás insertar el "Código Iframe" secreto de tu reporte de PowerBI cuando lo tengas listo, cambiar temas visuales y conectar otras herramientas.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
     </div>
   );
