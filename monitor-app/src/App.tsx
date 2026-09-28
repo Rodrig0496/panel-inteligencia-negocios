@@ -14,9 +14,10 @@ import {
   TrendingDown,
   BarChart,
   LogOut,
-  LogIn
+  LogIn,
+  List
 } from 'lucide-react';
-import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { signInWithPopup, signOut, onAuthStateChanged, GithubAuthProvider } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, githubProvider, db } from './firebase';
 
@@ -25,14 +26,20 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('facebook/react');
   const [repoData, setRepoData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<{name: string | null, avatar: string | null, email: string | null} | null>(null);
+  const [user, setUser] = useState<{name: string | null, avatar: string | null, email: string | null, screenName?: string} | null>(null);
+  const [githubToken, setGithubToken] = useState<string | null>(sessionStorage.getItem('github_token'));
+  const [myRepos, setMyRepos] = useState<any[]>([]);
+  const [showRepos, setShowRepos] = useState(false);
 
   // Función para buscar repositorio en GitHub API
-  const fetchRepoData = async (query: string) => {
+  const fetchRepoData = async (query: string, token?: string | null) => {
     if (!query.includes('/')) return; // Debe ser owner/repo
     setLoading(true);
     try {
-      const response = await fetch(`https://api.github.com/repos/${query}`);
+      const headers: any = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      
+      const response = await fetch(`https://api.github.com/repos/${query}`, { headers });
       if (response.ok) {
         const data = await response.json();
         setRepoData(data);
@@ -47,18 +54,23 @@ function App() {
   };
 
   useEffect(() => {
-    fetchRepoData(searchQuery);
+    fetchRepoData(searchQuery, githubToken);
     
     // Escuchar el estado de autenticación de Firebase
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
+        const anyUser = currentUser as any;
         setUser({
           name: currentUser.displayName || 'Usuario GitHub',
           avatar: currentUser.photoURL,
-          email: currentUser.email
+          email: currentUser.email,
+          screenName: anyUser.reloadUserInfo?.screenName
         });
       } else {
         setUser(null);
+        setGithubToken(null);
+        sessionStorage.removeItem('github_token');
+        setMyRepos([]);
       }
     });
 
@@ -67,12 +79,23 @@ function App() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchRepoData(searchQuery);
+    fetchRepoData(searchQuery, githubToken);
   };
 
   const handleLogin = async () => {
     try {
+      // Pedimos permiso para leer repositorios (públicos y privados)
+      githubProvider.addScope('repo');
       const result = await signInWithPopup(auth, githubProvider);
+      
+      // Obtener el Token de GitHub para poder usar la API en nombre del usuario
+      const credential = GithubAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken;
+      if (token) {
+        setGithubToken(token);
+        sessionStorage.setItem('github_token', token);
+      }
+
       const loggedUser = result.user;
       
       // Guardar o actualizar usuario en Firestore
@@ -93,9 +116,43 @@ function App() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      sessionStorage.removeItem('github_token');
     } catch (error) {
       console.error("Error al cerrar sesión", error);
     }
+  };
+
+  const fetchMyRepos = async () => {
+    if (!githubToken) {
+      alert("Por favor vuelve a Iniciar Sesión para conectar con GitHub.");
+      return;
+    }
+    
+    if (showRepos && myRepos.length > 0) {
+      setShowRepos(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('https://api.github.com/user/repos?sort=updated&per_page=15', {
+        headers: { Authorization: `Bearer ${githubToken}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMyRepos(data);
+        setShowRepos(true);
+      } else {
+        console.error("Error al obtener repositorios");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const selectRepo = (repoFullName: string) => {
+    setSearchQuery(repoFullName);
+    fetchRepoData(repoFullName, githubToken);
+    setShowRepos(false);
   };
 
   return (
@@ -161,10 +218,40 @@ function App() {
             <div style={{ cursor: 'pointer', color: 'var(--text-secondary)' }}><Bell size={20} /></div>
 
             {user ? (
-              <div className="team-members" style={{ cursor: 'pointer' }} onClick={handleLogout} title="Cerrar sesión">
-                <img src={user.avatar || ''} alt="avatar" style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'white' }} />
-                <span>{user.name}</span>
-                <LogOut size={16} style={{ marginLeft: '0.5rem', color: 'var(--danger-color)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative' }}>
+                <button 
+                  onClick={fetchMyRepos}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(88, 166, 255, 0.1)', color: 'var(--accent-color)', border: '1px solid var(--accent-color)', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}
+                >
+                  <List size={18} />
+                  Mis Repos
+                </button>
+                
+                <div className="team-members" style={{ cursor: 'pointer' }} onClick={handleLogout} title="Cerrar sesión">
+                  <img src={user.avatar || ''} alt="avatar" style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'white' }} />
+                  <span>{user.screenName || user.name}</span>
+                  <LogOut size={16} style={{ marginLeft: '0.5rem', color: 'var(--danger-color)' }} />
+                </div>
+
+                {/* Dropdown de repositorios */}
+                {showRepos && (
+                  <div style={{ position: 'absolute', top: '100%', right: '0', marginTop: '0.5rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.5rem', width: '300px', maxHeight: '400px', overflowY: 'auto', zIndex: 10, boxShadow: 'var(--glass-shadow)', backdropFilter: 'blur(12px)' }}>
+                    <h4 style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', marginBottom: '0.5rem' }}>Últimos repositorios</h4>
+                    {myRepos.length === 0 ? <p style={{ padding: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>No se encontraron repositorios.</p> : null}
+                    {myRepos.map(repo => (
+                      <div 
+                        key={repo.id} 
+                        onClick={() => selectRepo(repo.full_name)}
+                        style={{ padding: '0.8rem', cursor: 'pointer', borderRadius: '6px', marginBottom: '0.2rem', transition: 'background 0.2s', display: 'flex', flexDirection: 'column' }}
+                        onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(88, 166, 255, 0.1)')}
+                        onMouseOut={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{repo.name}</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{repo.private ? 'Privado' : 'Público'} • {new Date(repo.updated_at).toLocaleDateString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <button 
