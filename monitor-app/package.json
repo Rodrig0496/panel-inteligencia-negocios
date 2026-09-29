@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "docs": "typedoc --entryPointStrategy expand ./src --out dist/docs --name \"Manual Técnico - Monitor BI\"",
+    "diagram": "madge --image dist/docs/diagrama_arquitectura.svg src/App.tsx",
+    "build:all": "npm run build && npm run docs && npm run diagram",
     "lint": "oxlint",
     "preview": "vite preview"
   },
@@ -20,7 +23,9 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "madge": "^8.0.0",
     "oxlint": "^1.81.0",
+    "typedoc": "^0.28.20",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   }
