@@ -411,15 +411,43 @@ function App() {
               
               <div className="powerbi-wrapper">
                 {powerBiUrl ? (
-                  <iframe 
-                    title="Reporte Power BI" 
-                    width="100%" 
-                    height="100%" 
-                    src={powerBiUrl} 
-                    frameBorder="0" 
-                    allowFullScreen={true}
-                    style={{ borderRadius: '8px', minHeight: '500px' }}
-                  ></iframe>
+                  powerBiUrl.includes('reportEmbed') || powerBiUrl.includes('view?r=') ? (
+                    <iframe 
+                      title="Reporte Power BI" 
+                      width="100%" 
+                      height="100%" 
+                      src={powerBiUrl} 
+                      frameBorder="0" 
+                      allowFullScreen={true}
+                      style={{ borderRadius: '8px', minHeight: '500px' }}
+                    ></iframe>
+                  ) : (
+                    <div className="placeholder-content" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <BarChart className="placeholder-icon" size={64} style={{ color: 'var(--accent-color)' }} />
+                      <div style={{ textAlign: 'center' }}>
+                        <h4 style={{ color: '#323130', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Reporte Privado de Power BI</h4>
+                        <p style={{ maxWidth: '400px', margin: '0 auto', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                          Por las políticas de seguridad de tu universidad, el reporte no se puede incrustar directamente aquí. Haz clic abajo para verlo de forma segura.
+                        </p>
+                        <a 
+                          href={powerBiUrl} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          style={{
+                            background: 'var(--accent-color)',
+                            color: 'white',
+                            padding: '0.8rem 1.5rem',
+                            borderRadius: '6px',
+                            textDecoration: 'none',
+                            fontWeight: 'bold',
+                            display: 'inline-block'
+                          }}
+                        >
+                          Abrir Reporte en Power BI
+                        </a>
+                      </div>
+                    </div>
+                  )
                 ) : (
                   <div className="placeholder-content">
                     <BarChart className="placeholder-icon" size={64} />
