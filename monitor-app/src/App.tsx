@@ -23,7 +23,7 @@ import { auth, githubProvider, db } from './firebase';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [searchQuery, setSearchQuery] = useState('UPT-FAING-EPIS/si885-2026-ii-si885-2026-ii-proyecto-group-4');
+  const [searchQuery, setSearchQuery] = useState('Rodrig0496/panel-inteligencia-negocios');
   const [repoData, setRepoData] = useState<any>(null);
   const [contributors, setContributors] = useState<any[]>([]);
   const [milestones, setMilestones] = useState<any[]>([]);
@@ -129,10 +129,7 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchRepoData(searchQuery, githubToken);
-  };
+  // Buscador genérico removido para enfocarnos en el Dashboard Interno
 
   const handleLogin = async () => {
     try {
