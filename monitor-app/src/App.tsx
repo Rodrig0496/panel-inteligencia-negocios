@@ -416,7 +416,7 @@ function App() {
                       title="Reporte Power BI" 
                       width="100%" 
                       height="100%" 
-                      src={powerBiUrl} 
+                      src={`${powerBiUrl}${powerBiUrl.includes('?') ? '&' : '?'}filterPaneEnabled=false&navContentPaneEnabled=false`} 
                       frameBorder="0" 
                       allowFullScreen={true}
                       style={{ borderRadius: '8px', minHeight: '500px' }}
