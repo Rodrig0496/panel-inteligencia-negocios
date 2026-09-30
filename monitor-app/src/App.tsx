@@ -28,7 +28,7 @@ function App() {
   const [contributors, setContributors] = useState<any[]>([]);
   const [milestones, setMilestones] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [powerBiUrl, setPowerBiUrl] = useState<string>(localStorage.getItem('powerbi_url') || '');
+  const [powerBiUrl, setPowerBiUrl] = useState<string>(localStorage.getItem('powerbi_url') || 'https://app.powerbi.com/reportEmbed?reportId=7f14abbe-0ae2-45ab-8a0f-c6a6b1d605d8&autoAuth=true&ctid=b6b466ee-468d-4011-b9fc-fbdcf82ac90a');
   const [user, setUser] = useState<{name: string | null, avatar: string | null, email: string | null, screenName?: string} | null>(null);
   const [githubToken, setGithubToken] = useState<string | null>(sessionStorage.getItem('github_token'));
   const [myRepos, setMyRepos] = useState<any[]>([]);
