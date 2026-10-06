@@ -1,0 +1,60 @@
+@startuml Secuencia_Autenticacion_GitHub_Firebase
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundcorner 8
+autonumber
+
+skinparam sequence {
+    ArrowColor #2563EB
+    ActorBorderColor #0288D1
+    LifeLineBorderColor #4B5563
+    LifeLineBackgroundColor #E5E7EB
+    ParticipantBorderColor #1E293B
+    ParticipantBackgroundColor #F1F5F9
+    ParticipantFontColor #0F172A
+}
+
+title **Diagrama de Secuencia 1: Autenticación con GitHub OAuth y Sincronización en Cloud Firestore**\nSistema Monitor BI
+
+actor "Usuario / Miembro" as User
+participant "App.tsx\n(React UI)" as UI
+participant "Firebase Auth\n(SDK v12)" as Auth
+participant "GitHub OAuth\nService" as GH
+participant "Cloud Firestore\n(db/users)" as DB
+participant "sessionStorage\n(Navegador)" as SS
+
+User -> UI : Clic en "Iniciar Sesión"
+activate UI
+
+UI -> Auth : githubProvider.addScope('repo')
+UI -> Auth : signInWithPopup(auth, githubProvider)
+activate Auth
+
+Auth -> GH : Redirigir a Ventana Popup de Autorización GitHub
+activate GH
+GH --> User : Solicita consentimiento de permisos OAuth ('repo')
+User -> GH : Autoriza permisos
+GH --> Auth : Retorna Credencial OAuth + Token de Acceso
+deactivate GH
+
+Auth --> UI : Retorna UserCredential (User, accessToken)
+deactivate Auth
+
+UI -> SS : sessionStorage.setItem('github_token', token)
+activate SS
+SS --> UI : Token almacenado
+deactivate SS
+
+UI -> DB : setDoc(doc(db, "users", uid), {\n  uid, name, email, photoURL,\n  lastLogin: serverTimestamp()\n}, { merge: true })
+activate DB
+DB --> UI : Confirmación de guardado / merge exitoso
+deactivate DB
+
+UI -> UI : setUser({ name, avatar, email, screenName })
+UI -> UI : setGithubToken(token)
+UI -> UI : fetchRepoData(searchQuery, token)
+
+UI --> User : Renderiza interfaz autenticada (Avatar, "Mis Repos", Logout)
+deactivate UI
+
+@enduml

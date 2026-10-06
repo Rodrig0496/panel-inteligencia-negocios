@@ -1,0 +1,55 @@
+@startuml Secuencia_Cronograma_Milestones
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundcorner 8
+autonumber
+
+skinparam sequence {
+    ArrowColor #2563EB
+    ActorBorderColor #0288D1
+    LifeLineBorderColor #4B5563
+    LifeLineBackgroundColor #E5E7EB
+    ParticipantBorderColor #1E293B
+    ParticipantBackgroundColor #F1F5F9
+    ParticipantFontColor #0F172A
+}
+
+title **Diagrama de Secuencia 5: Monitoreo de Cronograma, Avance de Fases y Detección de Hitos Vencidos**\nSistema Monitor BI
+
+actor "Scrum Master /\nEvaluador" as SM
+participant "Pestaña 'Cronograma'\n(Vista React)" as SchedUI
+participant "Motor de Cálculo\nde Hitos" as Calc
+participant "Estado React\n(milestones)" as State
+
+SM -> SchedUI : Selecciona pestaña "Cronograma"
+activate SchedUI
+
+SchedUI -> State : Obtener array milestones
+activate State
+State --> SchedUI : Retorna lista de hitos de GitHub
+deactivate State
+
+loop Para cada hito en milestones
+    SchedUI -> Calc : Calcular progreso y vigencia(open_issues, closed_issues, due_on, state)
+    activate Calc
+    
+    Calc -> Calc : totalIssues = open_issues + closed_issues
+    Calc -> Calc : progress = totalIssues == 0 ? 0 : Math.round((closed_issues / totalIssues) * 100)
+    Calc -> Calc : isOverdue = due_on && new Date(due_on) < now() && state == 'open'
+    
+    Calc --> SchedUI : Retorna métricas { progress, isOverdue, totalIssues }
+    deactivate Calc
+    
+    SchedUI -> SchedUI : Configurar barra de avance CSS (ancho %, color verde si 100%, azul en progreso)
+    
+    alt isOverdue == true
+        SchedUI -> SchedUI : Activar texto de alerta: "(¡Atención: Atrasado!)" en color rojo var(--danger-color)
+    else isOverdue == false
+        SchedUI -> SchedUI : Mostrar fecha de entrega estándar o sin fecha límite
+    end
+end
+
+SchedUI --> SM : Despliega lista de Milestones con porcentajes, barras interactivas y banderas de atraso
+deactivate SchedUI
+
+@enduml

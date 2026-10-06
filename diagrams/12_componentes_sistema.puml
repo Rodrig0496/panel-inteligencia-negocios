@@ -1,0 +1,68 @@
+@startuml Componentes_Sistema_Monitor_BI
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam componentStyle uml2
+skinparam roundcorner 8
+
+skinparam component {
+    BackgroundColor #F8FAFC
+    BorderColor #334155
+    FontColor #0F172A
+    ArrowColor #2563EB
+}
+
+title **Diagrama de Componentes de Software - Arquitectura de la Solución**\nSistema Monitor BI - React 19, TypeScript, Firebase & Power BI
+
+package "Capa de Presentación (Frontend SPA - React 19 / Vite)" #EFF6FF {
+    component [App Root\n(App.tsx)] as Comp_App
+    component [Barra Lateral\n(SidebarNav)] as Comp_Nav
+    component [Dashboard Ejecutivo\n(DashboardBI)] as Comp_Dash
+    component [Gestor Mis Repos\n(MyReposDropdown)] as Comp_Repos
+    component [Módulo de Equipo\n(TeamAnalyzerView)] as Comp_Team
+    component [Módulo de Cronograma\n(ScheduleMilestonesView)] as Comp_Sched
+    component [Contenedor Power BI\n(PowerBIEmbedContainer)] as Comp_PBIEmbed
+    component [Configuración\n(SettingsView)] as Comp_Settings
+}
+
+package "Capa de Lógica y Servicios Locales" #F0FDF4 {
+    component [Cliente Firebase SDK\n(firebase.ts)] as Comp_FBClient
+    component [Motor de Extracción GitHub\n(fetchRepoData Service)] as Comp_GHExtractor
+    component [Almacenamiento Local\n(localStorage / sessionStorage)] as Comp_Storage
+}
+
+package "Servicios Cloud Externos (Backend as a Service)" #FFFBEB {
+    cloud "Google Cloud Platform / Firebase" {
+        [Firebase Authentication\n(OAuth Provider)] as Cloud_Auth
+        [Cloud Firestore Database\n(users collection)] as Cloud_Firestore
+    }
+    
+    cloud "GitHub Platform" {
+        [GitHub REST API v3\n(/repos, /issues, /contributors, /milestones)] as Cloud_GHAPI
+    }
+    
+    cloud "Microsoft Cloud" {
+        [Power BI Embedded Service\n(app.powerbi.com)] as Cloud_PBI
+    }
+}
+
+' Relaciones entre componentes de UI
+Comp_App *-- Comp_Nav
+Comp_App *-- Comp_Dash
+Comp_App *-- Comp_Repos
+Comp_App *-- Comp_Team
+Comp_App *-- Comp_Sched
+Comp_App *-- Comp_PBIEmbed
+Comp_App *-- Comp_Settings
+
+' Relaciones de UI con lógica
+Comp_App --> Comp_FBClient : Inicia sesión y observa auth
+Comp_App --> Comp_GHExtractor : Solicita métricas del repo
+Comp_App --> Comp_Storage : Persiste powerbi_url y github_token
+
+' Conexiones externas
+Comp_FBClient --> Cloud_Auth : signInWithPopup()
+Comp_FBClient --> Cloud_Firestore : setDoc(users/{uid})
+Comp_GHExtractor --> Cloud_GHAPI : HTTPS GET (Bearer Token)
+Comp_PBIEmbed --> Cloud_PBI : Renderiza Reporte en <iframe> / Enlace Seguro
+
+@enduml

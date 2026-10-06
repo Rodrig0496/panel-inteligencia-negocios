@@ -1,0 +1,55 @@
+@startuml Robustez_BCE_Monitor_BI
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundcorner 8
+
+title **Diagrama de Robustez (Boundary - Control - Entity)**\nCasos Clave de Uso: Monitor de Métricas y Analítica BI
+
+actor "Usuario / Analista" as User
+
+' Boundaries (Interfaces)
+boundary "Vista Dashboard BI\n(DashboardView)" as B_Dash
+boundary "Barra de Navegación\n(SidebarNav)" as B_Nav
+boundary "Modal Mis Repos\n(ReposDropdown)" as B_Repos
+boundary "Vista Equipo\n(TeamView)" as B_Team
+boundary "Vista Cronograma\n(ScheduleView)" as B_Sched
+boundary "Iframe / Fallback PBI\n(PowerBIEmbed)" as B_PBI
+
+' Controls (Controladores / Lógica)
+control "Gestor de Autenticación\n(AuthHandler)" as C_Auth
+control "Extractor de Métricas\n(MetricsExtractor)" as C_Metrics
+control "Enriquecedor de Colaboradores\n(TeamAnalyzer)" as C_Team
+control "Calculador de Cronograma\n(ScheduleEngine)" as C_Sched
+control "Validador de URL Power BI\n(PowerBIParser)" as C_PBI
+
+' Entities (Entidades de Datos)
+entity "Usuario / Token\n(UserProfile)" as E_User
+entity "Repositorio GitHub\n(RepositoryData)" as E_Repo
+entity "Colección Colaboradores\n(ContributorsList)" as E_Contrib
+entity "Colección Milestones\n(MilestonesList)" as E_Miles
+entity "Configuración Power BI\n(ReportConfig)" as E_PBIConfig
+
+' Interacciones
+User --> B_Nav : Selecciona menú
+User --> B_Dash : Consulta KPIs
+User --> B_Repos : Selecciona repo
+
+B_Nav --> C_Auth : Solicita autenticación / token
+C_Auth --> E_User : Valida y actualiza en Firestore
+
+B_Dash --> C_Metrics : Solicita actualización(query)
+C_Metrics --> E_Repo : Obtiene datos /repos
+C_Metrics --> C_Team : Dispara cálculo de equipo
+C_Metrics --> C_Sched : Dispara cálculo de cronograma
+C_Metrics --> C_PBI : Obtiene configuración Power BI
+
+C_Team --> E_Contrib : Cruza commits y tareas asignadas
+C_Team --> B_Team : Entrega estado con sobrecargas
+
+C_Sched --> E_Miles : Calcula % avance y vigencia
+C_Sched --> B_Sched : Entrega cronograma con hitos vencidos
+
+C_PBI --> E_PBIConfig : Lee URL en localStorage
+C_PBI --> B_PBI : Configura src o activa Fallback
+
+@enduml

@@ -1,0 +1,68 @@
+@startuml Secuencia_PowerBI_Incrustacion_Fallback
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundcorner 8
+autonumber
+
+skinparam sequence {
+    ArrowColor #2563EB
+    ActorBorderColor #0288D1
+    LifeLineBorderColor #4B5563
+    LifeLineBackgroundColor #E5E7EB
+    ParticipantBorderColor #1E293B
+    ParticipantBackgroundColor #F1F5F9
+    ParticipantFontColor #0F172A
+}
+
+title **Diagrama de Secuencia 3: Integración de Power BI Service y Manejo de Fallback Seguro por Políticas de Tenant**\nSistema Monitor BI
+
+actor "Usuario / Directivo" as User
+participant "Dashboard BI\n(Vista UI)" as UI
+participant "Configuración\n(Vista UI)" as Cfg
+participant "localStorage\n(Navegador)" as LS
+participant "Iframe Power BI\n(Contenedor DOM)" as Iframe
+participant "Microsoft Power BI\nService (Cloud)" as PBI
+
+== Caso A: Configuración y Persistencia de la URL ==
+User -> Cfg : Ingresa nueva URL de Power BI Service
+activate Cfg
+Cfg -> LS : localStorage.setItem('powerbi_url', newUrl)
+activate LS
+LS --> Cfg : Confirmación de persistencia
+deactivate LS
+Cfg --> User : Muestra mensaje: "Enlace vinculado y guardado correctamente"
+deactivate Cfg
+
+== Caso B: Carga y Renderizado en el Dashboard BI ==
+User -> UI : Selecciona pestaña "Dashboard BI"
+activate UI
+UI -> LS : localStorage.getItem('powerbi_url')
+activate LS
+LS --> UI : Retorna URL almacenada
+deactivate LS
+
+alt URL Contiene 'reportEmbed' o 'view?r=' (Formato Embebido Estándar)
+    UI -> UI : Anexa parámetros de limpieza de interfaz:\n&filterPaneEnabled=false&navContentPaneEnabled=false
+    UI -> Iframe : Monta elemento <iframe src="{URL_Limpia}">
+    activate Iframe
+    Iframe -> PBI : Solicita renderizado del reporte interactivo
+    activate PBI
+    PBI --> Iframe : Entrega reporte visual interactivo en tiempo real
+    deactivate PBI
+    Iframe --> UI : Visualización integrada completa
+    deactivate Iframe
+    UI --> User : Muestra reporte embebido directamente en la aplicación
+
+else URL Privada / Bloqueo por Restricciones de Tenant UPT (Fallback Activo)
+    UI -> UI : Detecta URL no compatible con iframe público o tenant cerrado
+    UI --> User : Renderiza panel de Fallback Seguro con mensaje explicativo:\n"Por políticas de seguridad de tu universidad..."
+    User -> UI : Clic en botón "Abrir Reporte en Power BI"
+    UI -> PBI : Abre reporte en nueva pestaña segura (target="_blank", rel="noreferrer")
+    activate PBI
+    PBI --> User : Muestra panel interactivo autenticado bajo la cuenta institucional UPT
+    deactivate PBI
+end
+
+deactivate UI
+
+@enduml

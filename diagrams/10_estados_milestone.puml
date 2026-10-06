@@ -1,0 +1,53 @@
+@startuml Estados_Milestone_Monitor_BI
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundcorner 8
+
+skinparam state {
+    BackgroundColor #F8FAFC
+    BorderColor #334155
+    FontColor #0F172A
+    ArrowColor #2563EB
+    StartColor #16A34A
+    EndColor #DC2626
+}
+
+title **Diagrama de Transición de Estados: Ciclo de Vida de un Hito (Milestone)**\nSistema Monitor BI
+
+[*] --> Creado : Inicializado en GitHub
+
+state Creado {
+    Creado : Total Tareas = 0
+    Creado : Avance = 0%
+}
+
+Creado --> EnProgreso : Se asocian tareas e issues
+
+state EnProgreso #EFF6FF {
+    EnProgreso : Estado = 'open'
+    EnProgreso : 0% <= Avance < 100%
+    EnProgreso : Fecha límite (due_on) >= Hoy
+}
+
+state Atrasado #FEF2F2 {
+    Atrasado : Estado = 'open'
+    Atrasado : due_on < Hoy
+    Atrasado : Bandera isOverdue = True
+    Atrasado : Alerta visual en rojo
+}
+
+state Completado #F0FDF4 {
+    Completado : Estado = 'closed'
+    Completado : Avance = 100%
+    Completado : closed_issues == total_issues
+}
+
+EnProgreso --> Atrasado : Expira fecha límite (due_on) sin completar tareas
+Atrasado --> EnProgreso : Se reprograma fecha límite (due_on) futura
+EnProgreso --> Completado : Se resuelven todos los issues asociados
+Atrasado --> Completado : Se resuelven issues pendientes tras fecha límite
+
+Completado --> EnProgreso : Se reabre hito o se anexa nueva tarea
+Completado --> [*] : Hito archivado exitosamente
+
+@enduml

@@ -1,0 +1,152 @@
+@startuml CU_Modulos_Monitor_BI
+left to right direction
+skinparam backgroundColor #F8FAFC
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 11
+skinparam defaultTextAlignment center
+
+' Espaciado amplio y generoso entre nodos y niveles para evitar cualquier solapamiento
+skinparam ranksep 60
+skinparam nodesep 50
+skinparam packagePadding 25
+
+skinparam title {
+    FontSize 15
+    FontColor #0F172A
+    BorderColor #CBD5E1
+    BackgroundColor #FFFFFF
+    RoundCorner 8
+    Padding 10
+}
+
+skinparam actor {
+    BackgroundColor #DBEAFE
+    BorderColor #2563EB
+    FontColor #1E3A8A
+    FontSize 11
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #FFFFFF
+    BorderColor #475569
+    FontColor #0F172A
+    FontSize 11
+    ArrowColor #2563EB
+    ArrowThickness 1.2
+}
+
+skinparam package {
+    BackgroundColor #FFFFFF
+    BorderColor #94A3B8
+    FontColor #0F172A
+    FontStyle bold
+    FontSize 12
+    RoundCorner 12
+}
+
+skinparam legend {
+    BackgroundColor #FFFFFF
+    BorderColor #CBD5E1
+    FontColor #334155
+    FontSize 10
+}
+
+title **SISTEMA MONITOR BI - CASOS DE USO POR PAQUETES / MÓDULOS**\nEstructura Modular Espaciosa para Presentación Ejecutiva
+
+' ========================================================
+' ACTOR PRINCIPAL
+' ========================================================
+actor "Usuario del Sistema\n(Líder / Desarrollador)" as User #DBEAFE
+
+' ========================================================
+' MÓDULO 1: IDENTIDAD Y ACCESO
+' ========================================================
+package "Módulo 1: Identidad, Acceso y Perfil" as Mod1 #EFF6FF {
+    usecase "CU-01: Iniciar Sesión con\nGitHub OAuth" as CU01 #FFFFFF
+    usecase "CU-03: Sincronizar Perfil\nen Cloud Firestore" as CU03 #F1F5F9
+    usecase "CU-05: Listar Repositorios\nPropios (Mis Repos)" as CU05 #FFFFFF
+    usecase "CU-02: Cerrar Sesión Segura" as CU02 #FFFFFF
+
+    CU01 .down.> CU03 : <<include>>
+    CU03 -[hidden]down-> CU05
+    CU05 -[hidden]down-> CU02
+}
+
+' ========================================================
+' MÓDULO 2: ANALÍTICA Y REPOSITORIOS
+' ========================================================
+package "Módulo 2: Analítica y Métricas de Repositorio" as Mod2 #F0FDF4 {
+    usecase "CU-04: Consultar Métricas\nde Repositorio" as CU04 #FFFFFF
+    usecase "CU-15: Sanitizar URL / Slug\nde Repositorio" as CU15 #F1F5F9
+    usecase "CU-16: Calcular KPIs Ejecutivos\n(Commits, Stars, Forks, Issues)" as CU16 #FFFFFF
+    usecase "CU-14: Recargar Datos\nen Tiempo Real" as CU14 #F1F5F9
+
+    CU04 .down.> CU15 : <<include>>
+    CU15 -[hidden]down-> CU16
+    CU04 .down.> CU16 : <<include>>
+    CU16 -[hidden]down-> CU14
+    CU04 <.down. CU14 : <<extend>>
+}
+
+' ========================================================
+' MÓDULO 3: POWER BI Y BUSINESS INTELLIGENCE
+' ========================================================
+package "Módulo 3: Inteligencia de Negocios & Power BI" as Mod3 #FEF3C7 {
+    usecase "CU-06: Visualizar Dashboard\nEjecutivo BI" as CU06 #FFFFFF
+    usecase "CU-08: Renderizar Reporte\nPower BI Embebido" as CU08 #F1F5F9
+    usecase "CU-09: Abrir Enlace Seguro\npor Fallback (Tenant UPT)" as CU09 #FFFBEB
+    usecase "CU-07: Configurar Enlace de\nReporte Power BI" as CU07 #FFFFFF
+
+    CU06 .down.> CU08 : <<include>>
+    CU08 <.down. CU09 : <<extend>>\n(Restricción Tenant)
+    CU08 -[hidden]down-> CU07
+}
+
+' ========================================================
+' MÓDULO 4: GESTIÓN DE EQUIPO Y CRONOGRAMA
+' ========================================================
+package "Módulo 4: Gestión de Equipo y Cronograma" as Mod4 #FDF2F8 {
+    usecase "CU-10: Monitorear Desempeño\nde Colaboradores" as CU10 #FFFFFF
+    usecase "CU-11: Evaluar Sobrecarga\n(>= 3 Tareas Asignadas)" as CU11 #FEF2F2
+    usecase "CU-12: Monitorear Cronograma\nde Milestones" as CU12 #FFFFFF
+    usecase "CU-13: Identificar Hitos Vencidos\n(Alerta de Atraso)" as CU13 #FEF2F2
+
+    CU10 .down.> CU11 : <<include>>
+    CU11 -[hidden]down-> CU12
+    CU12 .down.> CU13 : <<include>>
+}
+
+' Separación limpia entre columnas sin solapamiento de paquetes
+Mod1 -[hidden]right-> Mod3
+Mod2 -[hidden]right-> Mod4
+Mod1 -[hidden]down-> Mod2
+Mod3 -[hidden]down-> Mod4
+
+' Conexiones principales del Actor Usuario hacia cada módulo
+User --> CU01
+User --> CU05
+User --> CU02
+
+User --> CU04
+
+User --> CU06
+User --> CU07
+
+User --> CU10
+User --> CU12
+
+' ========================================================
+' LEYENDA VISUAL PARA EXPOSICIÓN
+' ========================================================
+legend bottom
+    |= Módulo |= Color |= Propósito Principal |
+    | Módulo 1 | <back:#EFF6FF> Celeste </back> | Autenticación OAuth 2.0, sesiones y selección rápida Mis Repos |
+    | Módulo 2 | <back:#F0FDF4> Verde </back> | Ingesta concurrente de métricas GitHub, parseo de URLs y KPIs |
+    | Módulo 3 | <back:#FEF3C7> Amarillo </back> | Informes interactivos Power BI y conmutador de contingencia UPT |
+    | Módulo 4 | <back:#FDF2F8> Rosa </back> | Balanceo de carga en colaboradores y control de hitos vencidos |
+endlegend
+
+@enduml

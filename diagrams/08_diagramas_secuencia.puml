@@ -1,0 +1,69 @@
+@startuml Diagrama_Secuencia_Integral
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundcorner 8
+autonumber
+
+skinparam sequence {
+    ArrowColor #2563EB
+    ActorBorderColor #0288D1
+    LifeLineBorderColor #4B5563
+    LifeLineBackgroundColor #E5E7EB
+    ParticipantBorderColor #1E293B
+    ParticipantBackgroundColor #F1F5F9
+    ParticipantFontColor #0F172A
+}
+
+title **V.3.c DIAGRAMA DE SECUENCIA LÓGICO DEL SISTEMA MONITOR BI**\nInteracción Temporal entre Usuario, Frontend React, Firebase, GitHub REST API y Power BI
+
+actor "Líder Técnico /\nDesarrollador" as User
+participant "App.tsx\n(React UI)" as UI
+participant "Firebase Auth\n& Firestore" as FB
+participant "GitHub REST API v3\n(Endpoints /repos)" as GH
+participant "Motor Analítico\n(Workload & Milestones)" as Engine
+participant "Power BI Service\n(Microsoft Cloud)" as PBI
+
+== 1. Autenticación y Sincronización de Perfil ==
+User -> UI : Clic en "Iniciar Sesión"
+UI -> FB : signInWithPopup(auth, githubProvider)
+FB --> UI : Retorna UserCredential + accessToken
+UI -> FB : setDoc(users/{uid}, perfil, { merge: true })
+FB --> UI : Confirmación de persistencia
+UI -> UI : sessionStorage.setItem('github_token', token)
+
+== 2. Extracción y Cálculo Concurrente de Métricas ==
+User -> UI : Ingresa URL o selecciona repositorio
+UI -> UI : sanitizarUrl(rawQuery) -> extrae owner/repo
+UI -> GH : GET /repos/{query} [Bearer token]
+GH --> UI : Retorna tamaño, stars, forks, open_issues
+
+UI -> GH : GET /issues?state=open&per_page=100
+GH --> UI : Retorna lista de incidencias y asignatarios
+
+UI -> GH : GET /contributors?per_page=12
+GH --> UI : Retorna colaboradores y número de commits
+
+UI -> GH : GET /milestones?state=all
+GH --> UI : Retorna lista de hitos planificados
+
+== 3. Procesamiento de Reglas de Negocio ==
+UI -> Engine : evaluarCargaColaboradores(contributors, issues)
+Engine -> Engine : Si asignaciones >= 3 -> activar Bandera SOBRECARGA
+Engine --> UI : Retorna colaboradores con alertas
+
+UI -> Engine : evaluarProgresoMilestones(milestones)
+Engine -> Engine : Calcular % avance y validar si due_on < hoy
+Engine --> UI : Retorna hitos con bandera ATRASADO
+
+== 4. Integración y Conmutación de Power BI ==
+alt URL de Power BI es compatible con Iframe público
+    UI -> PBI : Solicita renderizado embebido con parámetros limpios
+    PBI --> UI : Retorna reporte interactivo directamente en el DOM
+else URL restringida por directivas de tenant UPT (@virtual.upt.pe)
+    UI -> UI : Renderiza contenedor de Fallback Seguro
+    User -> UI : Clic en botón "Abrir Reporte en Power BI"
+    UI -> PBI : Abre reporte en nueva pestaña segura institucional
+end
+
+UI --> User : Presenta Dashboard Ejecutivo completo consolidado en tiempo real
+@enduml

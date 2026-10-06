@@ -1,0 +1,75 @@
+@startuml Secuencia_Extraccion_Metricas_GitHub
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundcorner 8
+autonumber
+
+skinparam sequence {
+    ArrowColor #2563EB
+    ActorBorderColor #0288D1
+    LifeLineBorderColor #4B5563
+    LifeLineBackgroundColor #E5E7EB
+    ParticipantBorderColor #1E293B
+    ParticipantBackgroundColor #F1F5F9
+    ParticipantFontColor #0F172A
+}
+
+title **Diagrama de Secuencia 2: Extracción, Enriquecimiento y Cálculo de Métricas de Repositorio**\nSistema Monitor BI
+
+actor "Usuario" as User
+participant "App.tsx\n(React UI)" as UI
+participant "fetchRepoData()\n(Controlador)" as Ctrl
+participant "GitHub REST API v3\n(/repos/{owner}/{repo})" as GH_Repo
+participant "GitHub REST API v3\n(/issues)" as GH_Issues
+participant "GitHub REST API v3\n(/contributors)" as GH_Contrib
+participant "GitHub REST API v3\n(/milestones)" as GH_Miles
+
+User -> UI : Ingresa URL o Nombre de Repositorio / Clic "Recargar Datos"
+activate UI
+
+UI -> Ctrl : fetchRepoData(rawQuery, githubToken)
+activate Ctrl
+
+Ctrl -> Ctrl : Sanitizar entrada (extrae owner/repo de URLs completas)
+Ctrl -> UI : setLoading(true)
+
+alt Consulta Información General del Repositorio
+    Ctrl -> GH_Repo : GET /repos/{query} [Auth: Bearer token]
+    activate GH_Repo
+    GH_Repo --> Ctrl : 200 OK (stargazers_count, forks_count, open_issues_count, size, owner)
+    deactivate GH_Repo
+    Ctrl -> UI : setRepoData(data)
+end
+
+alt Consulta Issues y Mapeo de Tareas por Responsable
+    Ctrl -> GH_Issues : GET /repos/{query}/issues?state=open&per_page=100
+    activate GH_Issues
+    GH_Issues --> Ctrl : 200 OK (Lista de issues con assignees)
+    deactivate GH_Issues
+    Ctrl -> Ctrl : Recorrer issues y construir issueCounts[login] = count
+end
+
+alt Consulta Colaboradores y Enriquecimiento con Tareas Asignadas
+    Ctrl -> GH_Contrib : GET /repos/{query}/contributors?per_page=12
+    activate GH_Contrib
+    GH_Contrib --> Ctrl : 200 OK (Lista de colaboradores y commits)
+    deactivate GH_Contrib
+    Ctrl -> Ctrl : Enriquecer con assigned_tasks: issueCounts[c.login] || 0
+    Ctrl -> UI : setContributors(enrichedContributors)
+end
+
+alt Consulta de Cronograma e Hitos del Proyecto
+    Ctrl -> GH_Miles : GET /repos/{query}/milestones?state=all
+    activate GH_Miles
+    GH_Miles --> Ctrl : 200 OK (Lista de milestones: open_issues, closed_issues, due_on, state)
+    deactivate GH_Miles
+    Ctrl -> UI : setMilestones(mData)
+end
+
+Ctrl -> UI : setLoading(false)
+deactivate Ctrl
+
+UI --> User : Renderiza tarjetas de métricas, gráficos KPI y colaboradores actualizados
+deactivate UI
+
+@enduml

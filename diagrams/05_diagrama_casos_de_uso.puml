@@ -1,0 +1,172 @@
+@startuml Diagrama_Casos_de_Uso_General
+left to right direction
+skinparam backgroundColor #F8FAFC
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 11
+skinparam defaultTextAlignment center
+
+skinparam ranksep 60
+skinparam nodesep 50
+skinparam packagePadding 25
+
+skinparam title {
+    FontSize 15
+    FontColor #0F172A
+    BorderColor #CBD5E1
+    BackgroundColor #FFFFFF
+    RoundCorner 8
+    Padding 10
+}
+
+skinparam actor {
+    BackgroundColor #DBEAFE
+    BorderColor #2563EB
+    FontColor #1E3A8A
+    FontSize 11
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #FFFFFF
+    BorderColor #475569
+    FontColor #0F172A
+    FontSize 11
+    ArrowColor #2563EB
+    ArrowThickness 1.2
+}
+
+skinparam package {
+    BackgroundColor #FFFFFF
+    BorderColor #94A3B8
+    FontColor #0F172A
+    FontStyle bold
+    FontSize 12
+    RoundCorner 12
+}
+
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #334155
+    RoundCorner 14
+}
+
+skinparam legend {
+    BackgroundColor #FFFFFF
+    BorderColor #CBD5E1
+    FontColor #334155
+    FontSize 10
+}
+
+title **V.2.b DIAGRAMA GENERAL DE CASOS DE USO - SISTEMA MONITOR BI**\nModelo Conceptual de Interacción entre Actores y Casos de Uso del Software
+
+' Actores Humanos (Izquierda)
+actor "Líder Técnico /\nProject Manager" as PM #DBEAFE
+actor "Desarrollador /\nMiembro Equipo" as Dev #E0E7FF
+actor "Docente Evaluador /\nStakeholder" as Docente #FEF3C7
+
+PM -[hidden]down-> Dev
+Dev -[hidden]down-> Docente
+
+' Límites del Sistema
+rectangle "Sistema Monitor BI" as Sistema {
+
+    package "Módulo 1: Identidad y Acceso" as Mod1 #EFF6FF {
+        usecase "CU-01: Iniciar Sesión con\nGitHub OAuth" as CU01 #FFFFFF
+        usecase "CU-03: Sincronizar Perfil\nen Cloud Firestore" as CU03 #F1F5F9
+        usecase "CU-05: Listar Repositorios\nPropios (Mis Repos)" as CU05 #FFFFFF
+        usecase "CU-02: Cerrar Sesión Segura" as CU02 #FFFFFF
+
+        CU01 .down.> CU03 : <<include>>
+        CU03 -[hidden]down-> CU05
+        CU05 -[hidden]down-> CU02
+    }
+
+    package "Módulo 2: Analítica de Repositorios" as Mod2 #F0FDF4 {
+        usecase "CU-04: Consultar Métricas\nde Repositorio" as CU04 #FFFFFF
+        usecase "CU-15: Visualizar KPIs\n(Commits, Stars, Forks, Issues)" as CU15 #FFFFFF
+        usecase "CU-14: Recargar Datos\nen Tiempo Real" as CU14 #F1F5F9
+
+        CU04 .down.> CU15 : <<include>>
+        CU04 <.down. CU14 : <<extend>>
+        CU15 -[hidden]down-> CU14
+    }
+
+    package "Módulo 3: Inteligencia de Negocios" as Mod3 #FEF3C7 {
+        usecase "CU-06: Visualizar Dashboard\nEjecutivo BI" as CU06 #FFFFFF
+        usecase "CU-08: Renderizar Reporte\nPower BI Embebido" as CU08 #F1F5F9
+        usecase "CU-09: Abrir Reporte Seguro por\nFallback (Tenant UPT)" as CU09 #FFFBEB
+        usecase "CU-07: Configurar Enlace de\nPower BI" as CU07 #FFFFFF
+
+        CU06 .down.> CU08 : <<include>>
+        CU08 <.down. CU09 : <<extend>>\n(Restricción Tenant)
+        CU08 -[hidden]down-> CU07
+    }
+
+    package "Módulo 4: Equipos y Cronograma" as Mod4 #FDF2F8 {
+        usecase "CU-10: Monitorear Contribuciones\nde Colaboradores" as CU10 #FFFFFF
+        usecase "CU-11: Detectar Sobrecarga de\nTareas (>= 3 Issues)" as CU11 #FEF2F2
+        usecase "CU-12: Monitorear Cronograma\nde Milestones" as CU12 #FFFFFF
+        usecase "CU-13: Identificar Hitos Vencidos\n(Alerta Overdue)" as CU13 #FEF2F2
+
+        CU10 .down.> CU11 : <<include>>
+        CU11 -[hidden]down-> CU12
+        CU12 .down.> CU13 : <<include>>
+    }
+
+    Mod1 -[hidden]down-> Mod2
+    Mod2 -[hidden]down-> Mod3
+    Mod3 -[hidden]down-> Mod4
+}
+
+' Sistemas Externos (Derecha)
+actor "GitHub Platform\n(REST API v3 & OAuth)" as GH << Sistema Externo >> #F3F4F6
+actor "Google Cloud Platform\n(Firebase Auth & Firestore)" as FB << Sistema Externo >> #FFF7ED
+actor "Microsoft Cloud\n(Power BI Service)" as PBI << Sistema Externo >> #FEF9C3
+
+GH -[hidden]down-> FB
+FB -[hidden]down-> PBI
+
+' Relaciones Actores Humanos -> Casos de Uso
+PM --> CU01
+PM --> CU05
+PM --> CU04
+PM --> CU06
+PM --> CU07
+PM --> CU10
+PM --> CU12
+PM --> CU02
+
+Dev --> CU01
+Dev --> CU05
+Dev --> CU04
+Dev --> CU06
+Dev --> CU10
+Dev --> CU12
+Dev --> CU02
+
+Docente --> CU01
+Docente --> CU06
+Docente --> CU10
+Docente --> CU12
+
+' Relaciones Casos de Uso -> Sistemas Externos
+CU01 -[#2563EB]-> GH : Delegación OAuth 2.0
+CU03 -[#EA580C]-> FB : Persistencia /users/{uid}
+CU04 -[#2563EB]-> GH : GET /repos
+CU05 -[#2563EB]-> GH : GET /user/repos
+CU10 -[#2563EB]-> GH : GET /contributors & /issues
+CU12 -[#2563EB]-> GH : GET /milestones
+CU08 -[#CA8A04]-> PBI : Incrustación Iframe
+CU09 -[#CA8A04]-> PBI : Redirección Segura UPT
+
+legend bottom left
+    |= Módulo |= Color |= Propósito Principal |
+    | Módulo 1 | <back:#EFF6FF> Celeste </back> | Autenticación OAuth 2.0, sesiones y selección rápida Mis Repos |
+    | Módulo 2 | <back:#F0FDF4> Verde </back> | Ingesta de métricas GitHub, parseo de URLs y KPIs del software |
+    | Módulo 3 | <back:#FEF3C7> Amarillo </back> | Informes interactivos Power BI y conmutador de contingencia UPT |
+    | Módulo 4 | <back:#FDF2F8> Rosa </back> | Balanceo de carga en colaboradores y control de hitos vencidos |
+endlegend
+
+@enduml

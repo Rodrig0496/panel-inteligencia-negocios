@@ -1,0 +1,83 @@
+@startuml Diagrama_Paquetes_Sistema
+skinparam backgroundColor #F8FAFC
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundcorner 10
+skinparam defaultFontSize 11
+skinparam defaultTextAlignment center
+
+skinparam package {
+    BackgroundColor #FFFFFF
+    BorderColor #475569
+    FontColor #0F172A
+    FontStyle bold
+    FontSize 12
+    RoundCorner 10
+}
+
+title **V.2.a DIAGRAMA DE PAQUETES - ARQUITECTURA MODULAR DEL SISTEMA MONITOR BI**\nDescomposición por Capas de Software y Subsistemas Funcionales
+
+package "Capa de Presentación (Frontend SPA - React 19 / Vite)" as Presentacion #EFF6FF {
+    package "Módulo Autenticación & Perfil" as Pkg_Auth #FFFFFF {
+        [LoginView]
+        [UserProfileHeader]
+        [MyReposDropdown]
+    }
+    
+    package "Módulo Analítica & Dashboard" as Pkg_Dash #FFFFFF {
+        [DashboardBIView]
+        [MetricCardsGrid]
+        [PowerBIEmbedContainer]
+        [FallbackNotice]
+    }
+    
+    package "Módulo Equipo & Sobrecarga" as Pkg_Team #FFFFFF {
+        [TeamAnalyzerView]
+        [ContributorCard]
+        [OverloadBadgeAlert]
+    }
+    
+    package "Módulo Cronograma & Hitos" as Pkg_Sched #FFFFFF {
+        [ScheduleMilestonesView]
+        [MilestoneProgressBar]
+        [OverdueAlertBadge]
+    }
+    
+    package "Módulo Configuración" as Pkg_Cfg #FFFFFF {
+        [SettingsView]
+        [PowerBIUrlConfig]
+    }
+}
+
+package "Capa de Lógica y Servicios (Controladores)" as Logica #F0FDF4 {
+    [GitHubApiService]
+    [FirebaseAuthService]
+    [FirestoreSyncService]
+    [WorkloadAnalyzerEngine]
+    [ScheduleProgressEngine]
+    [UrlSanitizerService]
+}
+
+package "Capa de Modelo de Dominio y Persistencia" as Datos #FEF3C7 {
+    [UserProfile]
+    [RepositoryModel]
+    [ContributorModel]
+    [MilestoneModel]
+    [IssueTaskModel]
+    [PowerBIConfigModel]
+}
+
+package "Capa de Servicios Cloud Externos" as Externos #FDF2F8 {
+    [GitHub Platform API v3]
+    [Google Cloud Firestore]
+    [Google Firebase Auth]
+    [Microsoft Power BI Service]
+}
+
+' Dependencias entre paquetes
+Presentacion .down.> Logica : Utiliza servicios
+Logica .down.> Datos : Manipula modelos
+Logica .right.> Externos : Consume APIs REST / OAuth
+Datos .right.> Externos : Sincroniza datos remotos
+
+@enduml

@@ -1,0 +1,49 @@
+@startuml Secuencia_Sobrecarga_Equipo
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundcorner 8
+autonumber
+
+skinparam sequence {
+    ArrowColor #2563EB
+    ActorBorderColor #0288D1
+    LifeLineBorderColor #4B5563
+    LifeLineBackgroundColor #E5E7EB
+    ParticipantBorderColor #1E293B
+    ParticipantBackgroundColor #F1F5F9
+    ParticipantFontColor #0F172A
+}
+
+title **Diagrama de Secuencia 4: Análisis del Equipo y Detección Algorítmica de Sobrecarga de Tareas**\nSistema Monitor BI
+
+actor "Project Manager /\nTech Lead" as PM
+participant "Pestaña 'Equipo'\n(Vista React)" as TeamUI
+participant "Algoritmo de\nEvaluación de Carga" as Eval
+participant "Estado React\n(contributors)" as State
+
+PM -> TeamUI : Selecciona pestaña "Equipo"
+activate TeamUI
+
+TeamUI -> State : Lee colección contributors
+activate State
+State --> TeamUI : Retorna array de colaboradores [{ login, avatar_url, contributions, assigned_tasks }]
+deactivate State
+
+loop Para cada colaborador en contributors
+    TeamUI -> Eval : Evaluar carga laboral (assigned_tasks)
+    activate Eval
+    
+    alt assigned_tasks >= 3
+        Eval --> TeamUI : Flag SOBRECARGA = True\n(Color: var(--danger-color), Icono: AlertCircle rojo, Label: "Sobrecarga")
+    else assigned_tasks < 3
+        Eval --> TeamUI : Flag NORMAL = True\n(Color: var(--text-primary), Label: "Carga equilibrada")
+    end
+    deactivate Eval
+    
+    TeamUI -> TeamUI : Renderizar tarjeta de miembro con avatar, login,\ntotal de commits y badge condicional de alerta
+end
+
+TeamUI --> PM : Despliega matriz de colaboradores destacando visualmente en rojo a miembros sobrecargados
+deactivate TeamUI
+
+@enduml

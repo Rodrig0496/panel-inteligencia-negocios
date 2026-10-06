@@ -1,0 +1,41 @@
+@startuml Organigrama_Empresa
+skinparam backgroundColor #F8FAFC
+skinparam shadowing false
+skinparam roundcorner 10
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 11
+skinparam defaultTextAlignment center
+
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #334155
+    RoundCorner 10
+    FontSize 11
+}
+
+title **ORGANIGRAMA DE LA ORGANIZACIÓN / EMPRESA CONSULTORA DE SOFTWARE**\nEstructura Funcional del Área de Tecnología y Business Intelligence
+
+rectangle "**Gerencia General**\nDirección Estratégica y Ejecutiva" as GG #DBEAFE
+rectangle "**Área de Calidad y Procesos**\nAuditoría y Normas ISO/IEC" as QA #F1F5F9
+
+rectangle "**Dirección de Tecnología (CTO)**\nGestión de Infraestructura y Desarrollo" as CTO #E0E7FF
+
+rectangle "**Área de Business Intelligence (BI)**\nAnalítica de Negocios y Reportes Power BI" as BI_Dept #FEF3C7
+rectangle "**Área de Desarrollo de Software**\nIngeniería Frontend, Backend y DevOps" as Dev_Dept #F0FDF4
+rectangle "**Área de Gestión de Proyectos (PMO)**\nScrum Masters y Líderes Técnicos" as PMO_Dept #FDF2F8
+
+rectangle "**Especialista en Datos & Power BI**\nModelado DAX y Paneles Directivos" as BI_Spec #FFFBEB
+rectangle "**Equipo de Desarrollo Frontend**\nReact 19, TypeScript y Firebase" as Frontend_Team #DCFCE7
+rectangle "**Líder Técnico / Project Manager**\nSeguimiento de Hitos y Carga Laboral" as Tech_Lead #FCE7F3
+
+GG -down-> QA : Supervisa
+GG -down-> CTO : Dirección
+CTO -down-> BI_Dept
+CTO -down-> Dev_Dept
+CTO -down-> PMO_Dept
+
+BI_Dept -down-> BI_Spec
+Dev_Dept -down-> Frontend_Team
+PMO_Dept -down-> Tech_Lead
+
+@enduml

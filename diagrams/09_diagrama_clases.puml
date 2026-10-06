@@ -1,0 +1,114 @@
+@startuml Diagrama_Clases_Logico
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam classAttributeIconSize 0
+skinparam roundcorner 8
+
+skinparam class {
+    BackgroundColor #F8FAFC
+    BorderColor #334155
+    HeaderBackgroundColor #E2E8F0
+    FontColor #0F172A
+    ArrowColor #2563EB
+}
+
+title **V.3.d DIAGRAMA DE CLASES LÓGICO DEL SISTEMA MONITOR BI**\nModelo de Clases de Software, Entidades de Dominio, Controladores y Relaciones
+
+class UserProfile {
+    + uid : String
+    + name : String
+    + email : String
+    + photoURL : String
+    + screenName : String
+    + lastLogin : Timestamp
+    + githubToken : String
+    --
+    + loginWithGitHub() : Promise<void>
+    + logout() : Promise<void>
+    + fetchMyRepositories() : Promise<Repository[]>
+}
+
+class Repository {
+    + id : Number
+    + full_name : String
+    + name : String
+    + description : String
+    + isPrivate : Boolean
+    + stargazers_count : Number
+    + forks_count : Number
+    + open_issues_count : Number
+    + size : Number
+    + updated_at : Date
+    + ownerAvatar : String
+    --
+    + fetchRepoData(query : String) : Promise<void>
+    + sanitizeUrl(rawQuery : String) : String
+    + calculateSummary() : MetricSummary
+}
+
+class Contributor {
+    + id : Number
+    + login : String
+    + avatar_url : String
+    + contributions : Number
+    + assigned_tasks : Number
+    + isOverloaded : Boolean
+    --
+    + evaluateWorkload(threshold : Number = 3) : Boolean
+}
+
+class Milestone {
+    + id : Number
+    + title : String
+    + description : String
+    + state : String
+    + open_issues : Number
+    + closed_issues : Number
+    + due_on : Date
+    + progressPercentage : Number
+    + isOverdue : Boolean
+    --
+    + calculateProgress() : Number
+    + checkOverdueStatus() : Boolean
+}
+
+class IssueTask {
+    + id : Number
+    + title : String
+    + state : String
+    + assignees : String[]
+    --
+    + countByAssignee() : Map<String, Number>
+}
+
+class PowerBIConfig {
+    + reportUrl : String
+    + reportId : String
+    + ctid : String
+    + isEmbeddedSupported : Boolean
+    + filterPaneEnabled : Boolean
+    + navContentPaneEnabled : Boolean
+    --
+    + saveToStorage(url : String) : void
+    + loadFromStorage() : String
+    + buildCleanIframeUrl() : String
+    + isFallbackRequired() : Boolean
+}
+
+class MetricSummary {
+    + totalCommitsAprox : String
+    + stars : Number
+    + forks : Number
+    + openIssues : Number
+}
+
+' Relaciones entre clases
+UserProfile "1" o-- "0..*" Repository : gestiona / consulta >
+Repository "1" *-- "1..*" Contributor : tiene colaboradores >
+Repository "1" *-- "0..*" Milestone : planifica en hitos >
+Repository "1" *-- "0..*" IssueTask : registra tareas >
+Contributor "1" o-- "0..*" IssueTask : tiene asignadas >
+Repository "1" -- "1" MetricSummary : resume métricas en >
+Repository "1" ..> PowerBIConfig : vincula reporte analítico >
+
+@enduml

@@ -1,0 +1,51 @@
+@startuml Proceso_Actual_Actividades
+skinparam backgroundColor #F8FAFC
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundcorner 10
+skinparam defaultFontSize 11
+
+skinparam activity {
+    BackgroundColor #FEE2E2
+    BorderColor #B91C1C
+    FontColor #0F172A
+    BarColor #B91C1C
+    StartColor #16A34A
+    EndColor #DC2626
+}
+
+title **III.a DIAGRAMA DEL PROCESO ACTUAL - GESTIÓN Y RECOLECCIÓN MANUAL DE MÉTRICAS**\nProceso Tradicional con Demoras Operativas y Alto Riesgo de Inconsistencia
+
+|Líder Técnico / PM|
+start
+:Identificar repositorios de software a evaluar;
+:Ingresar manualmente a la plataforma web de GitHub;
+
+|Desarrollador|
+:Reportar estado de tareas por mensajería o reuniones diarias;
+
+|Líder Técnico / PM|
+:Revisar incidencias (issues) abiertas una por una;
+:Contabilizar manualmente tareas asignadas por desarrollador;
+note right: No existe alerta visual de sobrecarga laboral;\nriesgo de retrasos silenciosos en sprints.
+
+:Extraer métricas de commits, forks y estrellas a mano;
+:Registrar datos recolectados en hojas de cálculo (Excel / Google Sheets);
+
+|Especialista BI / Analista|
+:Copiar datos de las hojas de cálculo;
+:Abrir Power BI Desktop de forma aislada;
+:Intentar actualizar paneles de forma estática;
+if (¿Existen restricciones de tenant institucional UPT?) then (Sí)
+    :Generar capturas de pantalla estáticas;
+    :Falta de interactividad en tiempo real;
+else (No)
+    :Exportar archivo PDF / PPT manual;
+endif
+
+|Líder Técnico / PM|
+:Consolidar informe final tras 2 a 3 días de trabajo manual;
+:Entregar reporte desfasado a la gerencia / docente evaluador;
+stop
+
+@enduml

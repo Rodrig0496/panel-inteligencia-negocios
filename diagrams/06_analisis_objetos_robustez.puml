@@ -1,0 +1,61 @@
+@startuml Analisis_Objetos_Robustez
+left to right direction
+skinparam backgroundColor #F8FAFC
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 11
+skinparam defaultTextAlignment center
+
+skinparam ranksep 60
+skinparam nodesep 45
+
+title **V.3.a ANÁLISIS DE OBJETOS - DIAGRAMA DE ROBUSTEZ (BOUNDARY - CONTROL - ENTITY)**\nModelo Lógico de Análisis de Objetos para Casos de Uso Nucleares
+
+actor "Usuario / Líder Técnico" as User #DBEAFE
+
+' BOUNDARIES (Interfaces de Frontera)
+boundary "Vista Dashboard BI\n(DashboardView)" as B_Dash #EFF6FF
+boundary "Menú Desplegable\n(MyReposDropdown)" as B_Repos #EFF6FF
+boundary "Vista de Equipos\n(TeamAnalyzerView)" as B_Team #EFF6FF
+boundary "Vista de Cronograma\n(ScheduleMilestonesView)" as B_Sched #EFF6FF
+boundary "Contenedor Power BI\n(PowerBIEmbed)" as B_PBI #EFF6FF
+
+' CONTROLS (Controladores y Lógica)
+control "Gestor Autenticación\n(AuthHandler)" as C_Auth #F0FDF4
+control "Extractor Métricas\n(MetricsExtractor)" as C_Metrics #F0FDF4
+control "Analizador Sobrecarga\n(WorkloadAnalyzer)" as C_Team #F0FDF4
+control "Calculador Cronograma\n(ScheduleProgressEngine)" as C_Sched #F0FDF4
+control "Validador Tenant PBI\n(PowerBIUrlParser)" as C_PBI #F0FDF4
+
+' ENTITIES (Entidades de Datos)
+entity "Perfil Usuario\n(UserProfile)" as E_User #FEF3C7
+entity "Datos Repositorio\n(RepositoryData)" as E_Repo #FEF3C7
+entity "Colaborador & Tareas\n(ContributorModel)" as E_Contrib #FEF3C7
+entity "Hito Planificado\n(MilestoneModel)" as E_Miles #FEF3C7
+entity "Configuración PBI\n(PowerBIConfig)" as E_PBI #FEF3C7
+
+' Interacciones
+User --> B_Dash : Consulta métricas y KPIs
+User --> B_Repos : Selecciona repositorio
+User --> B_Team : Evalúa colaboradores
+User --> B_Sched : Supervisa hitos
+
+B_Dash --> C_Auth : Solicita validar sesión
+C_Auth --> E_User : Lee y sincroniza en Firestore
+
+B_Dash --> C_Metrics : Solicita actualizar métricas(query)
+C_Metrics --> E_Repo : Extrae datos de GitHub API
+
+C_Metrics --> C_Team : Dispara análisis de colaboradores
+C_Team --> E_Contrib : Cruza commits y tareas (>= 3)
+C_Team --> B_Team : Provee estado con alertas de sobrecarga
+
+C_Metrics --> C_Sched : Dispara cálculo de hitos
+C_Sched --> E_Miles : Calcula % avance y retraso
+C_Sched --> B_Sched : Provee lista con hitos vencidos
+
+B_Dash --> C_PBI : Evalúa URL configurada
+C_PBI --> E_PBI : Lee de localStorage
+C_PBI --> B_PBI : Monta Iframe o activa Fallback UPT
+
+@enduml

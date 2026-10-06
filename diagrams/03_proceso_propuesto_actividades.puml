@@ -1,0 +1,68 @@
+@startuml Proceso_Propuesto_Actividades
+skinparam backgroundColor #F8FAFC
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundcorner 10
+skinparam defaultFontSize 11
+
+skinparam activity {
+    BackgroundColor #DCFCE7
+    BorderColor #15803D
+    FontColor #0F172A
+    BarColor #15803D
+    StartColor #16A34A
+    EndColor #DC2626
+}
+
+title **III.b DIAGRAMA DEL PROCESO PROPUESTO - MONITOREO AUTOMATIZADO CON MONITOR BI**\nProceso Automatizado en Tiempo Real con Integración de GitHub API, Firebase y Power BI
+
+|Usuario (Líder / Evaluador)|
+start
+:Ingresar a la aplicación web Monitor BI (SPA React 19);
+:Iniciar sesión federada con GitHub OAuth 2.0;
+
+|Sistema Monitor BI (Frontend & Firebase)|
+:Capturar token OAuth de GitHub en sessionStorage;
+:Sincronizar y auditar perfil de usuario en Cloud Firestore;
+:Cargar catálogo 'Mis Repos' o ingresar URL de proyecto;
+:Sanitizar cadena de entrada (extraer owner/repo);
+
+|GitHub REST API v3|
+fork
+    :Obtener metadata general (/repos) -> Commits, Stars, Forks, Issues;
+fork again
+    :Obtener incidencias abiertas (/issues) con asignatarios;
+fork again
+    :Obtener lista de colaboradores (/contributors);
+fork again
+    :Obtener lista de hitos planificados (/milestones);
+end fork
+
+|Sistema Monitor BI (Motor Analítico)|
+:Cruzar colaboradores con tareas asignadas;
+if (¿Tareas asignadas al colaborador >= 3?) then (Sí)
+    :Activar alerta visual en rojo '(Sobrecarga)';
+else (No)
+    :Asignar estado de carga equilibrada;
+endif
+
+:Calcular porcentaje de avance por Milestone ((closed/total)*100);
+if (¿Fecha due_on vencida y estado 'open'?) then (Sí)
+    :Activar bandera roja '(¡Atención: Atrasado!)';
+else (No)
+    :Marcar estado vigente o completado;
+endif
+
+|Microsoft Power BI Service|
+if (¿Reporte admite incrustación web directa?) then (Sí)
+    :Renderizar Iframe limpio de controles superfluos;
+else (No - Tenant UPT Restringido)
+    :Activar Fallback Seguro con botón de enlace directo;
+endif
+
+|Usuario (Líder / Evaluador)|
+:Visualizar Dashboard Ejecutivo unificado en menos de 1.5 segundos;
+:Tomar decisiones estratégicas de reasignación y gestión de entregas;
+stop
+
+@enduml

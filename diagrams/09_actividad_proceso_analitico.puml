@@ -1,0 +1,71 @@
+@startuml Actividad_Proceso_Analitico
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam roundcorner 8
+
+skinparam activity {
+    BackgroundColor #EFF6FF
+    BorderColor #1D4ED8
+    FontColor #0F172A
+    BarColor #1D4ED8
+    StartColor #16A34A
+    EndColor #DC2626
+}
+
+title **Diagrama de Actividades: Flujo del Proceso Analítico de Inteligencia de Negocios**\nSistema Monitor BI
+
+start
+
+:Usuario accede a la aplicación Monitor BI;
+
+if (¿Usuario está autenticado con GitHub?) then (No)
+    :Permitir consulta con repositorio por defecto / público;
+    note right: Acceso básico con límites estándar de GitHub API
+else (Sí)
+    :Obtener token OAuth desde sessionStorage;
+    :Cargar repositorios del usuario (Mis Repos);
+    note left: Acceso ampliado con límites altos y repositorios privados
+endif
+
+:Ingresar o seleccionar identificador de Repositorio;
+:Sanitizar consulta (extraer formato owner/repo);
+:Activar indicador de carga (loading = true);
+
+fork
+    :Consultar metadata general del repositorio (/repos);
+    :Generar KPIs (Commits aprox, Estrellas, Forks, Issues abiertos);
+fork again
+    :Consultar lista de issues abiertos (/issues);
+    :Contabilizar tareas asignadas por usuario (issueCounts);
+    :Consultar lista de colaboradores (/contributors);
+    :Cruzar commits con tareas asignadas;
+    if (¿Colaborador tiene tareas asignadas >= 3?) then (Sí)
+        :Marcar con estado SOBRECARGA (Alerta Roja);
+    else (No)
+        :Marcar con estado NORMAL;
+    endif
+fork again
+    :Consultar lista de Milestones (/milestones);
+    :Calcular porcentaje de avance por hito ((closed / total) * 100);
+    if (¿Hito tiene due_on vencido y estado 'open'?) then (Sí)
+        :Marcar con estado ATRASADO (Overdue);
+    else (No)
+        :Marcar vigencia normal o completado;
+    endif
+fork again
+    :Cargar URL de reporte Power BI desde localStorage;
+    if (¿URL admite incrustación web pública/directa?) then (Sí)
+        :Limpiar paneles laterales en iframe;
+        :Renderizar reporte embebido interactivo;
+    else (No - Tenant UPT Restringido)
+        :Activar contenedor de Fallback Seguro;
+        :Habilitar botón directo hacia Power BI Service;
+    endif
+end fork
+
+:Desactivar indicador de carga (loading = false);
+:Presentar Dashboard Ejecutivo unificado al usuario;
+
+stop
+
+@enduml

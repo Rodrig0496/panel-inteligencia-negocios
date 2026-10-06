@@ -1,0 +1,68 @@
+@startuml Actividades_Con_Objetos
+skinparam backgroundColor #F8FAFC
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 11
+skinparam roundcorner 10
+
+skinparam activity {
+    BackgroundColor #EFF6FF
+    BorderColor #1D4ED8
+    FontColor #0F172A
+    BarColor #1D4ED8
+    StartColor #16A34A
+    EndColor #DC2626
+}
+
+title **V.3.b DIAGRAMA DE ACTIVIDADES CON OBJETOS DE FLUJO (SWIMLANES & DATA OBJECTS)**\nModelo Lógico de Procesamiento Analítico con Flujo Explícito de Entidades de Datos
+
+|Usuario|
+start
+:Ingresar credenciales o solicitar inicio de sesión;
+
+|Sistema Monitor BI (Frontend React)|
+:Invocar proveedor OAuth con alcance 'repo';
+
+|Servicios Cloud Externos (GitHub / Firebase)|
+:Validar identidad y generar credencial;
+:<b>[Objeto: UserCredential & OAuthToken]</b>;
+
+|Sistema Monitor BI (Frontend React)|
+:Almacenar token temporal en sessionStorage;
+:Persistir perfil en colección /users;
+:<b>[Objeto: UserProfileDocument]</b>;
+
+|Usuario|
+:Ingresar URL de repositorio o elegir de 'Mis Repos';
+
+|Sistema Monitor BI (Frontend React)|
+:Sanitizar entrada y construir petición HTTP;
+:<b>[Objeto: RequestParams (owner/repo)]</b>;
+
+|Servicios Cloud Externos (GitHub / Firebase)|
+:Consultar endpoints REST v3 concurrentes;
+:<b>[Objeto: GitHubRawPayloads (Repo, Issues, Contribs, Milestones)]</b>;
+
+|Sistema Monitor BI (Frontend React)|
+:Transformar y calcular KPIs numéricos;
+:<b>[Objeto: MetricSummary (Commits, Stars, Forks, Issues)]</b>;
+:Evaluar regla de negocio de sobrecarga (assigned >= 3);
+:<b>[Objeto: EvaluatedContributors (con Alertas)]</b>;
+:Calcular porcentajes y vigencias temporales de hitos;
+:<b>[Objeto: ProcessedMilestones (con Banderas Overdue)]</b>;
+
+|Servicios Cloud Externos (GitHub / Firebase)|
+if (¿Reporte admite incrustación web directa?) then (Sí)
+    :Renderizar marco <iframe> interactivo;
+    :<b>[Objeto: EmbeddedReportView]</b>;
+else (No - Tenant UPT Restringido)
+    :Configurar panel de contingencia;
+    :<b>[Objeto: FallbackSecureLink]</b>;
+endif
+
+|Usuario|
+:Visualizar tablero analítico unificado;
+:Tomar decisiones de rebalanceo y supervisión de fases;
+stop
+
+@enduml

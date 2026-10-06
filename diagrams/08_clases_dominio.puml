@@ -1,0 +1,114 @@
+@startuml Clases_Dominio_Monitor_BI
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam classAttributeIconSize 0
+skinparam roundcorner 8
+
+skinparam class {
+    BackgroundColor #F8FAFC
+    BorderColor #334155
+    HeaderBackgroundColor #E2E8F0
+    FontColor #0F172A
+    ArrowColor #2563EB
+}
+
+title **Diagrama de Clases del Dominio / Modelo Conceptual de Datos**\nSistema Monitor BI - Universidad Privada de Tacna
+
+class UserProfile <<Entity>> {
+    + uid : String
+    + name : String
+    + email : String
+    + avatar : String
+    + screenName : String
+    + lastLogin : Timestamp
+    + githubToken : String
+    --
+    + loginWithGitHub() : Promise<void>
+    + logout() : Promise<void>
+    + getMyRepositories() : Promise<Repository[]>
+}
+
+class Repository <<Entity>> {
+    + id : Number
+    + full_name : String
+    + name : String
+    + description : String
+    + isPrivate : Boolean
+    + stargazers_count : Number
+    + forks_count : Number
+    + open_issues_count : Number
+    + size : Number
+    + updated_at : Date
+    + ownerAvatar : String
+    --
+    + fetchRepoData(query : String) : Promise<void>
+    + sanitizeUrl(rawQuery : String) : String
+    + calculateKPIs() : MetricSummary
+}
+
+class Contributor <<Entity>> {
+    + id : Number
+    + login : String
+    + avatar_url : String
+    + contributions : Number
+    + assigned_tasks : Number
+    + isOverloaded : Boolean
+    --
+    + evaluateWorkload(threshold : Number = 3) : Boolean
+}
+
+class Milestone <<Entity>> {
+    + id : Number
+    + title : String
+    + description : String
+    + state : String
+    + open_issues : Number
+    + closed_issues : Number
+    + due_on : Date
+    + progressPercentage : Number
+    + isOverdue : Boolean
+    --
+    + calculateProgress() : Number
+    + checkOverdueStatus() : Boolean
+}
+
+class IssueTask <<Entity>> {
+    + id : Number
+    + title : String
+    + state : String
+    + assignees : String[]
+    --
+    + countByAssignee() : Map<String, Number>
+}
+
+class PowerBIReportConfig <<ValueObject>> {
+    + reportUrl : String
+    + reportId : String
+    + ctid : String
+    + isEmbeddedSupported : Boolean
+    + filterPaneEnabled : Boolean
+    + navContentPaneEnabled : Boolean
+    --
+    + saveToStorage(url : String) : void
+    + loadFromStorage() : String
+    + buildCleanIframeUrl() : String
+    + isFallbackRequired() : Boolean
+}
+
+class MetricSummary <<ValueObject>> {
+    + totalCommitsAprox : String
+    + stars : Number
+    + forks : Number
+    + openIssues : Number
+}
+
+' Relaciones
+UserProfile "1" o-- "0..*" Repository : consulta / gestiona >
+Repository "1" *-- "1..*" Contributor : tiene colaboradores >
+Repository "1" *-- "0..*" Milestone : planifica en hitos >
+Repository "1" *-- "0..*" IssueTask : agrupa tareas >
+Contributor "1" o-- "0..*" IssueTask : tiene asignadas >
+Repository "1" -- "1" MetricSummary : resume estado en >
+Repository "1" ..> PowerBIReportConfig : complementa análisis con >
+
+@enduml
